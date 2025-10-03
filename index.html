@@ -92,6 +92,61 @@
       letter-spacing:-0.01em;
       margin:0;
     }
+    .hero-word{
+      position:relative;
+      display:inline-flex;
+      align-items:center;
+      white-space:nowrap;
+      min-width:6ch;
+    }
+    .hero-word .word-static{
+      position:relative;
+      z-index:1;
+      display:inline-block;
+      transition: opacity .4s ease;
+    }
+    .hero-word .word-static.word-static--transitioning{
+      opacity:0;
+    }
+    .hero-word .word-static.word-static--revealed{
+      transition: opacity .6s ease;
+    }
+    .hero-word .word-fragments,
+    .hero-word .word-incoming{
+      position:absolute;
+      inset:0;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:0;
+      pointer-events:none;
+      mix-blend-mode:screen;
+    }
+    .hero-word .fragment{
+      display:inline-block;
+      white-space:pre;
+      transform-origin:center;
+    }
+    .hero-word .word-fragments .fragment{
+      animation: hero-word-tear .92s cubic-bezier(.4,.02,.14,1);
+      animation-delay: var(--delay, 0s);
+      filter: drop-shadow(0 12px 24px rgba(12,15,19,.6));
+    }
+    .hero-word .word-incoming .fragment{
+      animation: hero-word-assemble 1s cubic-bezier(.24,.82,.16,1);
+      animation-delay: calc(.16s + var(--delay, 0s));
+      filter: drop-shadow(0 6px 18px rgba(157,178,191,.25));
+    }
+    @keyframes hero-word-tear{
+      0%{ opacity:1; transform: translate3d(0,0,0) rotate(0deg) scale(1); filter: blur(0); }
+      40%{ opacity:.86; transform: translate3d(calc(var(--tx, 0)*18px), calc(var(--ty, 0)*22px),0) rotate(calc(var(--rot, 0)*40deg)) scale(1.08); filter: blur(1px); }
+      100%{ opacity:0; transform: translate3d(calc(var(--tx, 0)*58px), calc(var(--ty, 0)*64px),0) rotate(calc(var(--rot, 0)*120deg)) scale(.62); filter: blur(8px); }
+    }
+    @keyframes hero-word-assemble{
+      0%{ opacity:0; transform: translate3d(calc(var(--tx, 0)*-52px), calc(var(--ty, 0)*-48px),0) rotate(calc(var(--rot, 0)*-90deg)) scale(.4); filter: blur(10px); }
+      55%{ opacity:.9; transform: translate3d(calc(var(--tx, 0)*6px), calc(var(--ty, 0)*8px),0) rotate(calc(var(--rot, 0)*8deg)) scale(1.05); filter: blur(1px); }
+      100%{ opacity:1; transform: translate3d(0,0,0) rotate(0deg) scale(1); filter: blur(0); }
+    }
     .hero p{
       max-width: var(--maxw);
       font-size: clamp(1rem, 1.6vw, 1.125rem);
@@ -293,7 +348,7 @@
     <section id="home" class="hero">
       <div class="container center">
         <span class="kicker">Stealth mode · Innovation-First</span>
-        <h1>From Understanding to Intelligence.</h1>
+        <h1>From <span class="hero-word" data-hero-word aria-live="polite">Understanding</span> to Intelligence.</h1>
         <p class="lead">
           We believe the mainstream AI path is misaligned with reality. The world is complex and shifting;
           more data or longer memory alone do not yield truth, understanding, or better decisions.
@@ -350,8 +405,8 @@
         <div class="kicker" id="company-title">Company</div>
         <div class="panel center">
           <p class="muted" style="max-width:var(--maxw); margin:0">
-            ONONO is a Europe-based team operating in the space between pre-seed and seed. We maintain a calm, private
-            posture while we refine the system.
+            Founded in 2025, ONONO is a Europe-based team operating in the space between pre-seed and seed. We maintain a calm,
+            private posture while we refine the system.
           </p>
           <p class="muted small" style="margin:0">Signal over noise. Fewer words, deeper work.</p>
         </div>
@@ -410,13 +465,118 @@
     <div class="container footgrid small">
       <div>© <span class="mono">2025</span> ONONO</div>
       <div class="nav-links">
-        <span class="nowrap">Privacy: we use no cookies or trackers.</span>
+        <span class="nowrap">Privacy: We don’t bake cookies. Keep us in mind, not the other way around.</span>
       </div>
     </div>
   </footer>
 
   <script>
     (function(){
+      const heroWordContainer = document.querySelector('[data-hero-word]');
+      if (heroWordContainer) {
+        const heroWordOptions = [
+          'Meaning', 'Interpretation', 'Explanation', 'Knowledge', 'Awareness', 'Consciousness', 'Perception', 'Insight',
+          'Reflection', 'Reason', 'Thought', 'Comprehension', 'Cognition', 'Experience', 'Perspective', 'Narrative', 'Context',
+          'Sense-making', 'Abstraction', 'Concept', 'Wisdom'
+        ];
+        const baseWord = heroWordContainer.textContent.trim() || 'Understanding';
+        let currentWord = baseWord;
+        heroWordContainer.setAttribute('aria-atomic', 'true');
+        const staticEl = document.createElement('span');
+        staticEl.className = 'word-static';
+        staticEl.textContent = currentWord;
+        staticEl.dataset.word = currentWord;
+        heroWordContainer.textContent = '';
+        heroWordContainer.appendChild(staticEl);
+
+        const heroRand = (min, max) => Math.random() * (max - min) + min;
+        const createFragmentContainer = (word, className) => {
+          const wrapper = document.createElement('span');
+          wrapper.className = className;
+          wrapper.setAttribute('aria-hidden', 'true');
+          const letters = word.length ? Array.from(word) : [''];
+          letters.forEach((letter, index) => {
+            const span = document.createElement('span');
+            span.className = 'fragment';
+            span.textContent = letter === ' ' ? ' ' : letter;
+            const angle = Math.random() * Math.PI * 2;
+            span.style.setProperty('--tx', Math.cos(angle).toFixed(3));
+            span.style.setProperty('--ty', Math.sin(angle).toFixed(3));
+            span.style.setProperty('--rot', (Math.random() * 2 - 1).toFixed(3));
+            span.style.setProperty('--delay', `${(index * 0.012 + Math.random() * 0.12).toFixed(3)}s`);
+            wrapper.appendChild(span);
+          });
+          return wrapper;
+        };
+
+        let changeTimer = null;
+        const queueNext = () => {
+          clearTimeout(changeTimer);
+          changeTimer = window.setTimeout(() => {
+            changeTimer = null;
+            runChange();
+          }, heroRand(3000, 5000));
+        };
+
+        const runChange = () => {
+          if (document.hidden) {
+            changeTimer = null;
+            return;
+          }
+          const candidates = heroWordOptions.filter(word => word !== currentWord);
+          if (!candidates.length) {
+            queueNext();
+            return;
+          }
+          const nextWord = candidates[Math.floor(Math.random() * candidates.length)];
+          if (!nextWord || nextWord === currentWord) {
+            queueNext();
+            return;
+          }
+
+          const outgoing = createFragmentContainer(currentWord, 'word-fragments');
+          const incoming = createFragmentContainer(nextWord, 'word-incoming');
+          heroWordContainer.appendChild(outgoing);
+          heroWordContainer.appendChild(incoming);
+
+          staticEl.classList.add('word-static--transitioning');
+          window.setTimeout(() => {
+            staticEl.textContent = nextWord;
+            staticEl.dataset.word = nextWord;
+            staticEl.classList.add('word-static--revealed');
+            staticEl.classList.remove('word-static--transitioning');
+            window.setTimeout(() => {
+              staticEl.classList.remove('word-static--revealed');
+            }, 360);
+          }, 420);
+
+          window.setTimeout(() => {
+            outgoing.remove();
+            incoming.remove();
+          }, 1200);
+
+          currentWord = nextWord;
+          queueNext();
+        };
+
+        window.setTimeout(() => {
+          if (!document.hidden) {
+            runChange();
+          } else {
+            changeTimer = null;
+          }
+        }, 3000);
+
+        document.addEventListener('visibilitychange', () => {
+          if (document.hidden) {
+            clearTimeout(changeTimer);
+            changeTimer = null;
+          } else if (changeTimer === null) {
+            queueNext();
+          }
+        });
+      }
+
       const body = document.body;
       const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       if (motionQuery.matches) {
@@ -458,7 +618,14 @@
       const ctx = canvas.getContext('2d');
       const keywords = `time, temporality, event, events, history, causality, narrative, story, sequence, chain of evidence, perspective, multi-perspective, intersubjectivity, subjectivity, viewpoint, voice, discourse, meaning, interpretation, understanding, explanation, knowledge, memory, data, information, computation, process, relation, relationships, connection, link, mapping, structure, pattern, category, abstraction, generalization, metaphor, symbol, language, words, concepts, ontology, nested ontologies, overlapping networks, networks, graph, web, system, dynamics, change, transformation, evolution, emergence, complexity, uncertainty, volatility, openness, context, world, reality, representation, model, surface, essence, appearance, nature, substance, form, difference, similarity, contrast, identity, otherness, boundary, limit, horizon, possibility, potential, hypothesis, assumption, evaluation, testing, critique, reflection, recursion, iteration, self-reference, feedback, loop, correlation, autocorrelation, autoregression, induction, deduction, abduction, analysis, synthesis, statistics, probability, inference, reason, logic, causation, consequence, choice, decision, judgment, agency, action, tool, instrument, construction, recombination, composition, innovation, creativity, imagination, discovery, invention, novelty, intuition, consciousness, awareness, presence, emergence, essence, meaning-making, interpretation, hermeneutics, phenomenology, epistemology, ontology, ethics, responsibility, trust, alignment, cooperation, dialogue, communication, interrelation, interaction, resonance, coherence, continuity, disruption, fragmentation, wholeness, totality, plurality, diversity, unity, paradox, ambiguity, uncertainty, openness, possibility, potentiality, transcendence`.split(',').map(k => k.trim());
 
-      const NODE_COUNT = 82;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth || 0;
+      const baseNodeCount = 78;
+      const densityFactor = viewportWidth < 640 ? 0.58 : viewportWidth < 1024 ? 0.78 : 1;
+      const rawPixelRatio = window.devicePixelRatio || 1;
+      const ratioFactor = rawPixelRatio > 1.5 ? 0.9 : 1;
+      const MAX_PIXEL_RATIO = 1.8;
+      const NODE_COUNT = Math.max(36, Math.round(baseNodeCount * densityFactor * ratioFactor));
+      const NEAREST_TARGET = 2;
       const rand = (min, max) => Math.random() * (max - min) + min;
       const state = {
         nodes: [],
@@ -481,7 +648,7 @@
       schedulePulse(schedule.start);
 
       function resize() {
-        const ratio = window.devicePixelRatio || 1;
+        const ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
         canvas.width = window.innerWidth * ratio;
         canvas.height = window.innerHeight * ratio;
         ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -504,6 +671,7 @@
           swapAt: now + rand(6000, 20000),
           randomLink: null,
           randomLink2: null,
+          wantsSecondLink: Math.random() < 0.45,
           randomLinkExpiry: now + rand(4000, 9000),
           randomLink2Expiry: now + rand(6000, 12000),
           shimmer: 0,
@@ -522,9 +690,11 @@
         const node = state.nodes[i];
         node.randomLink = Math.floor(Math.random() * NODE_COUNT);
         if (node.randomLink === i) node.randomLink = (node.randomLink + 7) % NODE_COUNT;
-        node.randomLink2 = Math.floor(Math.random() * NODE_COUNT);
-        if (node.randomLink2 === i || node.randomLink2 === node.randomLink) {
-          node.randomLink2 = (node.randomLink2 + 13) % NODE_COUNT;
+        if (node.wantsSecondLink) {
+          node.randomLink2 = Math.floor(Math.random() * NODE_COUNT);
+          if (node.randomLink2 === i || node.randomLink2 === node.randomLink) {
+            node.randomLink2 = (node.randomLink2 + 13) % NODE_COUNT;
+          }
         }
       }
 
@@ -536,7 +706,7 @@
         const dt = Math.min((now - lastTime) / 16, 4);
         lastTime = now;
 
-        const ratio = window.devicePixelRatio || 1;
+        const ratio = Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO);
         const width = canvas.width / ratio;
         const height = canvas.height / ratio;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -596,11 +766,13 @@
             if (idx === i) idx = (idx + 9) % NODE_COUNT;
             node.randomLink = idx;
           }
-          if (now > node.randomLink2Expiry) {
+          if (node.wantsSecondLink && now > node.randomLink2Expiry) {
             node.randomLink2Expiry = now + rand(8000, 16000);
             let idx = Math.floor(Math.random() * NODE_COUNT);
             if (idx === i || idx === node.randomLink) idx = (idx + 11) % NODE_COUNT;
             node.randomLink2 = idx;
+          } else if (!node.wantsSecondLink) {
+            node.randomLink2 = null;
           }
 
           if (now > node.pulseAt) {
@@ -631,11 +803,7 @@
           const ax = a.x * width;
           const ay = a.y * height;
 
-          const nearest = [
-            { dist: Infinity, index: -1 },
-            { dist: Infinity, index: -1 },
-            { dist: Infinity, index: -1 }
-          ];
+          const nearest = Array.from({ length: NEAREST_TARGET }, () => ({ dist: Infinity, index: -1 }));
 
           for (let j = 0; j < state.nodes.length; j++) {
             if (i === j) continue;
@@ -644,14 +812,10 @@
             const dy = ay - b.y * height;
             const dist = dx * dx + dy * dy;
             if (dist < nearest[0].dist) {
-              nearest[2] = nearest[1];
-              nearest[1] = nearest[0];
+              if (nearest.length > 1) nearest[1] = nearest[0];
               nearest[0] = { dist, index: j };
-            } else if (dist < nearest[1].dist) {
-              nearest[2] = nearest[1];
+            } else if (nearest.length > 1 && dist < nearest[1].dist) {
               nearest[1] = { dist, index: j };
-            } else if (dist < nearest[2].dist) {
-              nearest[2] = { dist, index: j };
             }
           }
 
@@ -686,8 +850,13 @@
 
         ctx.globalAlpha = 1;
 
+        const fontBase = width < 520 ? 7.2 : width < 768 ? 8.4 : width < 1024 ? 9.2 : 10;
+        const fontRange = width < 520 ? 18 : width < 768 ? 21 : width < 1024 ? 24 : 26;
+        const blurBase = width < 520 ? 10 : width < 768 ? 14 : 18;
+        const blurRange = width < 520 ? 26 : width < 768 ? 34 : 42;
+
         for (const node of state.nodes) {
-          const size = 10 + (1 - node.z) * 26;
+          const size = fontBase + (1 - node.z) * fontRange;
           const visibilityBoost = Math.min(1, state.visibility + 0.1);
           const glow = node.pointerGlow;
           const shade = node.pointerShade;
@@ -702,7 +871,7 @@
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.shadowColor = `rgba(190, 210, 240, ${0.25 + glow * 0.4})`;
-          ctx.shadowBlur = 18 + (1 - node.z) * 42 + glow * 30;
+          ctx.shadowBlur = blurBase + (1 - node.z) * blurRange + glow * 24;
           ctx.fillText(node.word, 0, 0);
           ctx.restore();
         }
