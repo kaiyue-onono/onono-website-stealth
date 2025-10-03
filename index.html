@@ -97,11 +97,26 @@
     }
     .hero h1 br{ display:block; }
     .hero-word{
+      position:relative;
       display:inline-block;
       color:#9db2bf;
       letter-spacing:0.12em;
       font-weight:600;
-      min-width:8ch;
+      text-align:left;
+      white-space:nowrap;
+    }
+    .hero-word::after{
+      content:"CONSCIOUSNESS";
+      display:block;
+      height:0;
+      overflow:hidden;
+      visibility:hidden;
+      letter-spacing:inherit;
+      font-weight:inherit;
+    }
+    @media (max-width: 639px){
+      .hero-word{ white-space:normal; }
+      .hero-word::after{ content:none; }
     }
     .hero-word .word-static{
       display:inline-block;
@@ -114,7 +129,7 @@
       opacity:1;
     }
     .hero p{
-      max-width: var(--maxw);
+      max-width: min(52rem, 100%);
       font-size: clamp(1rem, 1.6vw, 1.125rem);
       color: var(--muted);
     }
@@ -180,6 +195,7 @@
       opacity:.6;
       filter: blur(.2px);
       transition: opacity .3s ease;
+      pointer-events:auto;
     }
     .sigil:hover{ opacity:.9; }
     .sigil-ring{
@@ -188,14 +204,34 @@
       border-radius:50%;
       border:1px solid color-mix(in oklab, var(--accent-3) 40%, transparent);
       box-shadow:0 0 22px rgba(82,109,130,.28) inset;
+      cursor:pointer;
+      transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+    }
+    .sigil-ring:active{
+      transform: scale(.95);
+      box-shadow:0 0 26px rgba(82,109,130,.45) inset;
     }
     .sigil-glyph{
       font-size: clamp(1.2rem, 3vw, 1.8rem);
       letter-spacing:.4em;
       color: color-mix(in oklab, var(--accent-4) 40%, var(--muted));
     }
+    .sigil[data-boosting="true"] .sigil-ring{
+      border-color: color-mix(in oklab, var(--accent-3) 65%, transparent);
+      box-shadow:0 0 30px rgba(157,178,191,.4) inset, 0 0 18px rgba(157,178,191,.18);
+    }
     @media (max-width: 680px){
-      .sigil{ display:none; }
+      .sigil{
+        right: clamp(14px, 8vw, 36px);
+        bottom: clamp(14px, 10vw, 40px);
+        opacity:.72;
+      }
+      .sigil-ring{
+        width: clamp(48px, 18vw, 66px);
+      }
+      .sigil-glyph{
+        font-size: clamp(1rem, 4vw, 1.4rem);
+      }
     }
 
     /* ====== Sections ====== */
@@ -498,6 +534,8 @@
       const REGULAR_RANGE = [BASE_MIN + EXTRA_HOLD, BASE_MAX + EXTRA_HOLD];
 
       const heroWordContainer = document.querySelector('[data-hero-word]');
+      const sigilEl = document.querySelector('.sigil');
+      const sigilRing = document.querySelector('.sigil-ring');
       if (heroWordContainer) {
         const rawHeroOptions = [
           'Meaning', 'Interpretation', 'Explanation', 'Knowledge', 'Awareness', 'Consciousness', 'Perception', 'Insight',
@@ -713,12 +751,52 @@
       const NODE_COUNT = Math.max(36, Math.round(baseNodeCount * densityFactor * ratioFactor));
       const NEAREST_TARGET = 2;
       const rand = (min, max) => Math.random() * (max - min) + min;
+      const BASE_EDGE_COLORS = [
+        [190, 220, 240],
+        [120, 160, 210],
+        [40, 80, 140]
+      ];
+      const BASE_TEXT_COLOR = [210, 220, 230];
+      const BASE_SHADOW_COLOR = [190, 210, 240];
+      const EDGE_TINT_LIGHTNESS = [0.78, 0.64, 0.48];
+      const TEXT_TINT_LIGHTNESS = 0.82;
+      const SHADOW_TINT_LIGHTNESS = 0.76;
+      const mixColors = (base, tint, amount) => [
+        base[0] + (tint[0] - base[0]) * amount,
+        base[1] + (tint[1] - base[1]) * amount,
+        base[2] + (tint[2] - base[2]) * amount
+      ];
+      const hslToRgb = (h, s, l) => {
+        const hue = ((h % 360) + 360) % 360 / 360;
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        const channel = (t) => {
+          let temp = t;
+          if (temp < 0) temp += 1;
+          if (temp > 1) temp -= 1;
+          if (temp < 1 / 6) return p + (q - p) * 6 * temp;
+          if (temp < 1 / 2) return q;
+          if (temp < 2 / 3) return p + (q - p) * (2 / 3 - temp) * 6;
+          return p;
+        };
+        return [channel(hue + 1 / 3) * 255, channel(hue) * 255, channel(hue - 1 / 3) * 255];
+      };
+      const toRgba = (rgb, alpha) => `rgba(${Math.round(rgb[0])}, ${Math.round(rgb[1])}, ${Math.round(rgb[2])}, ${alpha})`;
       const state = {
         nodes: [],
         mouse: { speed: 0 },
         pointer: { x: 0.5, y: 0.5, active: false, polarity: 1, radius: 0.16, lastMove: 0 },
         visibility: 0,
-        targetVisibility: 0
+        targetVisibility: 0,
+        boost: {
+          hold: false,
+          releaseAt: 0,
+          multiplier: 1,
+          target: 1,
+          colorIntensity: 0,
+          hue: 210,
+          saturation: 0.25
+        }
       };
 
       const schedule = {
@@ -787,6 +865,7 @@
       let lastTime = performance.now();
       let noiseSeed = rand(0, 1000);
       const maxSpeed = 1000;
+      let sigilWasBoosting = false;
 
       function update(now) {
         const dt = Math.min((now - lastTime) / 16, 4);
@@ -796,6 +875,16 @@
         const width = canvas.width / ratio;
         const height = canvas.height / ratio;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const boostActive = state.boost.hold || now <= state.boost.releaseAt;
+        state.boost.target = boostActive ? 1.4 : 1;
+        state.boost.multiplier += (state.boost.target - state.boost.multiplier) * 0.08;
+        const colorTarget = boostActive ? 1 : 0;
+        state.boost.colorIntensity += (colorTarget - state.boost.colorIntensity) * 0.08;
+        if (sigilEl && sigilWasBoosting !== boostActive) {
+          sigilEl.dataset.boosting = boostActive ? 'true' : 'false';
+          sigilWasBoosting = boostActive;
+        }
 
         if (now >= schedule.start) {
           if (schedule.nextPulse === Infinity) {
@@ -817,7 +906,7 @@
         const visibleOpacity = now >= schedule.start ? 0.02 + state.visibility * 0.85 : 0;
         canvas.style.opacity = visibleOpacity.toFixed(3);
 
-        const motionFactor = 0.55 + Math.min(state.mouse.speed / maxSpeed, 0.9);
+        const motionFactor = (0.55 + Math.min(state.mouse.speed / maxSpeed, 0.9)) * state.boost.multiplier;
         const pointer = state.pointer;
 
         ctx.save();
@@ -826,6 +915,22 @@
         if (pointer.active && now - pointer.lastMove > 480) {
           pointer.active = false;
         }
+
+        const mobileFontFactor = width < 680 ? 0.7 : 1;
+        const fontBase = (width < 520 ? 7.2 : width < 768 ? 8.4 : width < 1024 ? 9.2 : 10) * mobileFontFactor;
+        const fontRange = (width < 520 ? 18 : width < 768 ? 21 : width < 1024 ? 24 : 26) * mobileFontFactor;
+        const blurBase = width < 520 ? 10 : width < 768 ? 14 : 18;
+        const blurRange = width < 520 ? 26 : width < 768 ? 34 : 42;
+
+        const tintHue = state.boost.hue;
+        const tintSaturation = state.boost.saturation;
+        const tintAmount = state.boost.colorIntensity * 0.65;
+        const tintedEdges = BASE_EDGE_COLORS.map((base, idx) => {
+          const tint = hslToRgb(tintHue, tintSaturation, EDGE_TINT_LIGHTNESS[idx]);
+          return mixColors(base, tint, tintAmount);
+        });
+        const tintedText = mixColors(BASE_TEXT_COLOR, hslToRgb(tintHue, tintSaturation, TEXT_TINT_LIGHTNESS), tintAmount);
+        const tintedShadow = mixColors(BASE_SHADOW_COLOR, hslToRgb(tintHue, tintSaturation, SHADOW_TINT_LIGHTNESS), tintAmount);
 
         for (let i = 0; i < state.nodes.length; i++) {
           const node = state.nodes[i];
@@ -921,9 +1026,9 @@
             const partnerPointer = (n.pointerGlow - n.pointerShade) * 0.35;
             const edgeAlpha = Math.max(0.05, Math.min(0.75, (depthAlpha + partnerAlpha) * 0.5 + pointerLift + partnerPointer));
             const gradient = ctx.createLinearGradient(ax, ay, bx, by);
-            gradient.addColorStop(0, `rgba(190, 220, 240, ${edgeAlpha})`);
-            gradient.addColorStop(0.6, `rgba(120, 160, 210, ${edgeAlpha * 0.75})`);
-            gradient.addColorStop(1, `rgba(40, 80, 140, ${Math.max(0.05, edgeAlpha * 0.6)})`);
+            gradient.addColorStop(0, toRgba(tintedEdges[0], edgeAlpha));
+            gradient.addColorStop(0.6, toRgba(tintedEdges[1], edgeAlpha * 0.75));
+            gradient.addColorStop(1, toRgba(tintedEdges[2], Math.max(0.05, edgeAlpha * 0.6)));
             ctx.strokeStyle = gradient;
             ctx.lineWidth = 0.35 + (1 - a.z) * 1.25 + a.pointerGlow * 0.35;
             ctx.globalAlpha = Math.min(1, 0.6 + state.visibility * 0.8);
@@ -936,11 +1041,6 @@
 
         ctx.globalAlpha = 1;
 
-        const fontBase = width < 520 ? 7.2 : width < 768 ? 8.4 : width < 1024 ? 9.2 : 10;
-        const fontRange = width < 520 ? 18 : width < 768 ? 21 : width < 1024 ? 24 : 26;
-        const blurBase = width < 520 ? 10 : width < 768 ? 14 : 18;
-        const blurRange = width < 520 ? 26 : width < 768 ? 34 : 42;
-
         for (const node of state.nodes) {
           const size = fontBase + (1 - node.z) * fontRange;
           const visibilityBoost = Math.min(1, state.visibility + 0.1);
@@ -952,11 +1052,11 @@
           ctx.save();
           ctx.translate(x, y);
           ctx.globalAlpha = alpha;
-          ctx.fillStyle = 'rgba(210, 220, 230, 1)';
+          ctx.fillStyle = toRgba(tintedText, 1);
           ctx.font = `${size}px "IBM Plex Mono", "SFMono-Regular", monospace`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
-          ctx.shadowColor = `rgba(190, 210, 240, ${0.25 + glow * 0.4})`;
+          ctx.shadowColor = toRgba(tintedShadow, 0.25 + glow * 0.4);
           ctx.shadowBlur = blurBase + (1 - node.z) * blurRange + glow * 24;
           ctx.fillText(node.word, 0, 0);
           ctx.restore();
@@ -965,7 +1065,7 @@
         ctx.restore();
 
         state.mouse.speed *= 0.92;
-        noiseSeed += 0.00022 * (0.6 + state.visibility * 0.8);
+        noiseSeed += 0.00022 * (0.6 + state.visibility * 0.8) * state.boost.multiplier;
 
         requestAnimationFrame(update);
       }
@@ -1006,10 +1106,59 @@
         state.pointer.active = false;
       });
 
+      if (sigilRing) {
+        const boostState = state.boost;
+        let releaseTimer = null;
+        const clearReleaseTimer = () => {
+          if (releaseTimer) {
+            window.clearTimeout(releaseTimer);
+            releaseTimer = null;
+          }
+        };
+        const scheduleRelease = () => {
+          boostState.releaseAt = performance.now() + 250;
+          clearReleaseTimer();
+          releaseTimer = window.setTimeout(() => {
+            releaseTimer = null;
+          }, 260);
+        };
+        const setNewTint = () => {
+          boostState.hue = Math.random() * 360;
+        };
+        const onPointerDown = (event) => {
+          if (!sigilRing.contains(event.target)) return;
+          try { sigilRing.setPointerCapture(event.pointerId); } catch (err) { /* no-op */ }
+          boostState.hold = true;
+          boostState.releaseAt = performance.now() + 500;
+          setNewTint();
+          clearReleaseTimer();
+        };
+        const onPointerUp = () => {
+          boostState.hold = false;
+          scheduleRelease();
+        };
+        sigilRing.addEventListener('pointerdown', onPointerDown);
+        sigilRing.addEventListener('pointerup', onPointerUp);
+        sigilRing.addEventListener('pointercancel', onPointerUp);
+        sigilRing.addEventListener('pointerleave', (event) => {
+          if (event.buttons) {
+            return;
+          }
+          boostState.hold = false;
+        });
+        sigilRing.addEventListener('click', (event) => {
+          event.preventDefault();
+          boostState.hold = false;
+          scheduleRelease();
+        });
+      }
+
       document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'hidden') {
           state.mouse.speed = 0;
           state.pointer.active = false;
+          state.boost.hold = false;
+          state.boost.releaseAt = 0;
         }
       });
     })();
