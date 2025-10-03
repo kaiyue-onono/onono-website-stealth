@@ -1,0 +1,27 @@
+name: Deploy PR Preview
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+
+concurrency: preview-${{ github.ref }}
+
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+     
+      - name: Install & Build
+        if: github.event.action != 'closed'
+        run: |
+          npm install
+          npm run build
+
+      
+      - name: Deploy preview
+        uses: rossjrw/pr-preview-action@v1
+        with:
+          source-dir: ./dist
