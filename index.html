@@ -1,1 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark only" />
+  <meta name="theme-color" content="#0b0d10" />
+  <title>onono — stealth</title>
+  <meta name="description" content="onono — a restrained thesis about intelligence in a complex, shifting world. Stealth mode. Research-first." />
+  <style>
+    /* ====== Design Tokens (Stealth Monolith) ====== */
+    :root{
+      --bg:#0b0d10;          /* near-black */
+      --bg-2:#101317;        /* deep slate for section contrast */
+      --text:#e6e8eb;        /* soft white */
+      --muted:#9DB2BF;       /* subtle text/accent */
+      --edge:#171b20;        /* hairline divider */
+      --accent-1:#27374D;    /* provided palette */
+      --accent-2:#526D82;
+      --accent-3:#9DB2BF;
+      --accent-4:#DDE6ED;
 
+      --maxw:72ch;
+      --pad:clamp(20px, 4vw, 48px);
+      --lh:1.5;
+    }
+
+    /* ====== Base ====== */
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,"Helvetica Neue",Arial,"Noto Sans",sans-serif,"Apple Color Emoji","Segoe UI Emoji";
+      line-height:var(--lh);
+      -webkit-font-smoothing:antialiased;
+      text-rendering:optimizeLegibility;
+    }
+    a{ color:inherit; text-decoration:none; }
+    a:hover{ text-decoration:underline; text-decoration-thickness:1px; }
+    :focus-visible{ outline:2px solid var(--accent-3); outline-offset:3px; border-radius:4px; }
+
+    .container{ max-width: min(1100px, 92vw); margin:0 auto; padding-inline:var(--pad); }
+    .stack{ display:flex; flex-direction:column; gap:clamp(14px, 2.2vw, 20px); }
+    .muted{ color:var(--muted); }
+    .hairline{ border-top:1px solid var(--edge); }
+    .kicker{ letter-spacing:.14em; text-transform:uppercase; font-size:.78rem; color:var(--muted); }
+    .mono{ font-variant-numeric: tabular-nums; }
+
+    /* ====== Header / Nav ====== */
+    header{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(6px);
+      background: color-mix(in oklab, var(--bg) 85%, transparent);
+      border-bottom:1px solid var(--edge);
+    }
+    .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px var(--pad); }
+    .brand{ font-weight:600; letter-spacing:.02em; }
+    .nav a{ opacity:.86; }
+    .nav a:hover{ opacity:1; text-decoration:none; }
+    .nav-links{ display:flex; gap:20px; align-items:center; }
+
+    /* ====== Hero ====== */
+    .hero{
+      position:relative; isolation:isolate;
+      padding-block: clamp(96px, 20vh, 160px);
+      overflow:hidden;
+    }
+    .hero h1{
+      font-size:clamp(2rem, 6vw, 4rem);
+      line-height:1.06;
+      letter-spacing:-0.01em;
+      margin:0;
+    }
+    .hero p{
+      max-width: var(--maxw);
+      font-size: clamp(1rem, 1.6vw, 1.125rem);
+      color: var(--muted);
+    }
+    .cta{
+      display:flex; gap:10px; flex-wrap:wrap; margin-top:10px;
+    }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:10px 14px; border-radius:10px;
+      border:1px solid var(--edge);
+      background: linear-gradient(to bottom, #0c0f13, #0a0c10);
+      text-decoration:none; opacity:.96;
+      transition: transform .2s ease, border-color .2s ease, opacity .2s ease;
+    }
+    .btn:hover{ transform: translateY(-1px); opacity:1; border-color: color-mix(in oklab, var(--accent-3) 30%, var(--edge)); text-decoration:none; }
+    .btn-ghost{ background: transparent; }
+    .btn-accent{
+      border-color: color-mix(in oklab, var(--accent-2) 40%, var(--edge));
+      background: linear-gradient(180deg, color-mix(in oklab, var(--accent-1) 10%, #0a0c10), #0a0c10);
+    }
+
+    /* Subtle animated backdrop */
+    .hero::before{
+      content:""; position:absolute; inset:-40vmax; z-index:-1;
+      background:
+        radial-gradient(40vmax 40vmax at 15% 20%, color-mix(in oklab, var(--accent-1) 28%, transparent) 0%, transparent 60%),
+        radial-gradient(36vmax 36vmax at 85% 80%, color-mix(in oklab, var(--accent-2) 22%, transparent) 0%, transparent 70%),
+        radial-gradient(50vmax 50vmax at 60% 10%, color-mix(in oklab, var(--accent-3) 12%, transparent) 0%, transparent 75%);
+      filter: blur(40px) saturate(120%);
+      animation: drift 60s linear infinite;
+      opacity:.45;
+    }
+    @keyframes drift{
+      0%{ transform: translate3d(-6%, -4%, 0) rotate(0deg); }
+      50%{ transform: translate3d(6%, 4%, 0) rotate(180deg); }
+      100%{ transform: translate3d(-6%, -4%, 0) rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce){
+      .hero::before{ animation:none; }
+    }
+
+    /* ====== Sections ====== */
+    section{ padding-block: clamp(56px, 10vh, 96px); }
+    .lead{ font-size: clamp(1.05rem, 1.7vw, 1.22rem); color:var(--muted); }
+    .thesis-points{ margin:0; padding-left:1.2rem; max-width:var(--maxw); }
+    .thesis-points li{ margin: .4rem 0; }
+    .panel{
+      background: linear-gradient(180deg, #0c0f13, #0a0c10);
+      border: 1px solid var(--edge);
+      border-radius: 14px;
+      padding: clamp(16px, 4vw, 24px);
+    }
+
+    /* ====== Footer ====== */
+    footer{ border-top:1px solid var(--edge); padding:20px var(--pad) 40px; color:var(--muted); }
+    .footgrid{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between; }
+    .small{ font-size:.88rem; }
+
+    /* ====== Utils ====== */
+    .center{ display:flex; flex-direction:column; gap:18px; align-items:flex-start; }
+    .spacer{ height: clamp(28px, 4vw, 40px); }
+    .caps{ text-transform:uppercase; letter-spacing:.12em; font-size:.78rem; color:var(--muted); }
+    .divider{ height:1px; background:var(--edge); margin-block: 24px; }
+    .nowrap{ white-space:nowrap; }
+    .muted-hr{ border:none; border-top:1px solid var(--edge); margin: 14px 0 0; opacity:.7; }
+    .skip{
+      position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;
+    }
+    .skip:focus{ position:fixed; left:16px; top:12px; width:auto; height:auto; padding:8px 12px; background:#000; border:1px solid var(--edge); border-radius:10px; z-index:999; }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#content">Skip to content</a>
+
+  <!-- ====== Header / Nav ====== -->
+  <header>
+    <nav class="nav container" aria-label="Primary">
+      <div class="brand" aria-label="onono">onono</div>
+      <div class="nav-links">
+        <a href="#thesis">Thesis</a>
+        <a href="#preview">Preview</a>
+        <a href="#investors">Investors</a>
+        <a href="#careers">Careers</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="content">
+    <!-- ====== Hero ====== -->
+    <section id="home" class="hero">
+      <div class="container center">
+        <span class="kicker">Stealth mode · Research-first</span>
+        <h1>Intelligence beyond memory.</h1>
+        <p class="lead">
+          We believe the mainstream AI path is misaligned with reality. The world is complex and shifting;
+          more data or longer memory alone do not yield truth, understanding, or better decisions.
+        </p>
+        <div class="cta">
+          <a class="btn btn-accent" href="#preview">Join Preview</a>
+          <a class="btn btn-ghost" href="#thesis">Read Thesis</a>
+          <a class="btn btn-ghost" href="#investors">Investors</a>
+          <a class="btn btn-ghost" href="#careers">Careers</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== Vision / Thesis ====== -->
+    <section id="thesis" class="hairline">
+      <div class="container stack">
+        <div class="kicker">Thesis</div>
+        <div class="panel stack">
+          <p class="muted" style="margin:0; max-width:var(--maxw)">
+            The prevailing belief that bigger datasets, larger knowledge bases, or superior memory
+            will solve intelligence is, in our view, incomplete.
+          </p>
+          <ul class="thesis-points">
+            <li>The world is non‑stationary, complex, and often not learnable from data alone.</li>
+            <li>Knowing more does not guarantee better decisions.</li>
+            <li>Memory ≠ understanding. Memory ≠ intelligence.</li>
+            <li>Systems centered on data/knowledge/memory alone struggle under real‑world volatility.</li>
+          </ul>
+          <p class="muted" style="margin:0; max-width:var(--maxw)">
+            onono explores multi‑dimensional cognitive approaches aimed at meeting a rapidly changing external reality
+            through ongoing thinking and understanding. We are in stealth and presently focused on internal research.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== Preview / Waiting List (mailto only) ====== -->
+    <section id="preview" class="hairline" aria-labelledby="preview-title">
+      <div class="container stack">
+        <div class="kicker" id="preview-title">Preview</div>
+        <div class="panel center">
+          <p class="muted" style="max-width:var(--maxw); margin:0">
+            We run a small, staged preview. No public details yet.
+          </p>
+          <div class="cta">
+            <!-- Simple, restrained subject only -->
+            <a class="btn" href="mailto:hello@onono.ai?subject=Preview%20Waitlist">Email: Preview Waitlist</a>
+          </div>
+          <hr class="muted-hr" />
+          <p class="muted small" style="margin:0">No forms. No trackers.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== Investors (mailto only) ====== -->
+    <section id="investors" class="hairline" aria-labelledby="investors-title">
+      <div class="container stack">
+        <div class="kicker" id="investors-title">Investors</div>
+        <div class="panel center">
+          <p class="muted" style="max-width:var(--maxw); margin:0">
+            We are in stealth. We share materials in one‑to‑one conversations only.
+          </p>
+          <div class="cta">
+            <a class="btn" href="mailto:hello@onono.ai?subject=Investor%20Deck%20Request">Email: Investor Deck Request</a>
+          </div>
+          <div class="divider"></div>
+          <p class="small muted" style="margin:0">
+            This is informational only and not an offer to sell or a solicitation to buy any security.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ====== Careers (mailto only) ====== -->
+    <section id="careers" class="hairline" aria-labelledby="careers-title">
+      <div class="container stack">
+        <div class="kicker" id="careers-title">Careers</div>
+        <div class="panel center">
+          <p class="muted" style="margin:0">We are assembling a small, senior team.</p>
+          <div class="spacer" aria-hidden="true"></div>
+          <div>
+            <div class="caps">Open Role</div>
+            <h3 style="margin:.3rem 0 0; font-size: clamp(1.2rem, 2.6vw, 1.6rem); letter-spacing:-.01em;">Senior Full‑Stack TypeScript Developer</h3>
+          </div>
+          <div class="cta">
+            <a class="btn" href="mailto:hello@onono.ai?subject=Application%20%E2%80%94%20Senior%20Full-Stack%20TypeScript%20Developer">Email: Application</a>
+          </div>
+          <hr class="muted-hr" />
+          <p class="small muted" style="margin:0">
+            Process: short task · technical conversation · values alignment. Calm pace, high standards.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ====== Footer ====== -->
+  <footer>
+    <div class="container footgrid small">
+      <div>© <span class="mono">2025</span> onono</div>
+      <div class="nav-links">
+        <span class="nowrap">Impressum: onono · Switzerland · <a href="mailto:hello@onono.ai?subject=Impressum">hello@onono.ai</a></span>
+        <span aria-hidden="true">·</span>
+        <span class="nowrap">Privacy: we use no cookies or trackers.</span>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
