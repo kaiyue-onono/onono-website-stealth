@@ -36,7 +36,9 @@
       line-height:var(--lh);
       -webkit-font-smoothing:antialiased;
       text-rendering:optimizeLegibility;
+      transition: background 1s ease, color .6s ease;
     }
+    body[data-phase="intro"]{ overflow:hidden; }
     body::before{
       content:"";
       position:fixed;
@@ -66,7 +68,9 @@
       backdrop-filter: blur(6px);
       background: color-mix(in oklab, var(--bg) 85%, transparent);
       border-bottom:1px solid var(--edge);
+      transition: transform .8s ease, opacity .8s ease;
     }
+    body[data-phase="intro"] header{ opacity:0; transform: translateY(-30px); }
     .nav{ display:flex; align-items:center; justify-content:space-between; padding:16px var(--pad); }
     .brand{ font-weight:600; letter-spacing:.02em; }
     .nav a{ opacity:.86; }
@@ -78,7 +82,9 @@
       position:relative; isolation:isolate;
       padding-block: clamp(96px, 20vh, 160px);
       overflow:hidden;
+      transition: transform 1s ease, opacity 1s ease;
     }
+    body[data-phase="intro"] .hero{ opacity:0; transform: translateY(40px); }
     .hero .center{ position:relative; }
     .hero h1{
       font-size:clamp(2rem, 6vw, 4rem);
@@ -196,10 +202,79 @@
       position:absolute; left:-9999px; top:auto; width:1px; height:1px; overflow:hidden;
     }
     .skip:focus{ position:fixed; left:16px; top:12px; width:auto; height:auto; padding:8px 12px; background:#000; border:1px solid var(--edge); border-radius:10px; z-index:999; }
+
+    /* ====== Dimensional background canvas ====== */
+    #networkCanvas{
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+      filter: blur(1px);
+      mix-blend-mode:screen;
+      opacity:.35;
+      transition: opacity 1.2s ease;
+    }
+    body[data-phase="intro"] #networkCanvas{ opacity:.2; }
+
+    /* ====== Intro overlay ====== */
+    #intro-overlay{
+      position:fixed;
+      inset:0;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: radial-gradient(circle at 50% 40%, rgba(18,22,28,.6), rgba(8,10,14,.92));
+      z-index:20;
+      pointer-events:none;
+      transition: opacity 1s ease;
+    }
+    #intro-overlay::after{
+      content:"";
+      position:absolute;
+      inset:10%;
+      border:1px solid rgba(157,178,191,.08);
+      pointer-events:none;
+      mix-blend-mode:screen;
+    }
+    #intro-overlay h1{
+      font-size: clamp(2.4rem, 8vw, 5.2rem);
+      letter-spacing:.38em;
+      font-weight:500;
+      margin:0;
+      text-transform:uppercase;
+      color: color-mix(in oklab, var(--accent-4) 45%, var(--text));
+      text-shadow:0 0 60px rgba(157,178,191,.15);
+    }
+    body[data-phase="revealed"] #intro-overlay{ opacity:0; pointer-events:none; }
+    body[data-phase="revealed"] main,
+    body[data-phase="revealed"] footer{ opacity:1; }
+    body[data-phase="intro"] main,
+    body[data-phase="intro"] footer{ opacity:0; }
+
+    main, footer{ transition: opacity 1s ease .1s; }
+
+    @media (prefers-reduced-motion: reduce){
+      #networkCanvas{ display:none; }
+      #intro-overlay{ transition:none; }
+      header, .hero, main, footer{ transition:none; }
+    }
   </style>
 </head>
-<body>
+<body data-phase="intro">
+  <canvas id="networkCanvas" aria-hidden="true"></canvas>
+  <div id="intro-overlay" role="presentation">
+    <h1>ONONO</h1>
+  </div>
   <a class="skip" href="#content">Skip to content</a>
+  <noscript>
+    <style>
+      body[data-phase="intro"] #intro-overlay{display:none;}
+      body[data-phase="intro"] header{opacity:1; transform:none;}
+      body[data-phase="intro"] .hero{opacity:1; transform:none;}
+      body[data-phase="intro"] main,
+      body[data-phase="intro"] footer{opacity:1;}
+    </style>
+  </noscript>
 
   <!-- ====== Header / Nav ====== -->
   <header>
@@ -339,5 +414,197 @@
       </div>
     </div>
   </footer>
+
+  <script>
+    (function(){
+      const body = document.body;
+      const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      if (motionQuery.matches) {
+        body.dataset.phase = 'revealed';
+        return;
+      }
+      const reveal = () => {
+        if (body.dataset.phase !== 'revealed') {
+          body.dataset.phase = 'revealed';
+          document.removeEventListener('scroll', revealHandler);
+        }
+      };
+      const revealHandler = () => {
+        reveal();
+        window.removeEventListener('pointerdown', revealHandler);
+      };
+      setTimeout(reveal, 3400);
+      document.addEventListener('scroll', revealHandler, { passive: true, once: true });
+      window.addEventListener('pointerdown', revealHandler, { once: true });
+      window.addEventListener('keydown', revealHandler, { once: true });
+
+      const canvas = document.getElementById('networkCanvas');
+      if (!canvas || !canvas.getContext) return;
+      const ctx = canvas.getContext('2d');
+      const keywords = `time, temporality, event, events, history, causality, narrative, story, sequence, chain of evidence, perspective, multi-perspective, intersubjectivity, subjectivity, viewpoint, voice, discourse, meaning, interpretation, understanding, explanation, knowledge, memory, data, information, computation, process, relation, relationships, connection, link, mapping, structure, pattern, category, abstraction, generalization, metaphor, symbol, language, words, concepts, ontology, nested ontologies, overlapping networks, networks, graph, web, system, dynamics, change, transformation, evolution, emergence, complexity, uncertainty, volatility, openness, context, world, reality, representation, model, surface, essence, appearance, nature, substance, form, difference, similarity, contrast, identity, otherness, boundary, limit, horizon, possibility, potential, hypothesis, assumption, evaluation, testing, critique, reflection, recursion, iteration, self-reference, feedback, loop, correlation, autocorrelation, autoregression, induction, deduction, abduction, analysis, synthesis, statistics, probability, inference, reason, logic, causation, consequence, choice, decision, judgment, agency, action, tool, instrument, construction, recombination, composition, innovation, creativity, imagination, discovery, invention, novelty, intuition, consciousness, awareness, presence, emergence, essence, meaning-making, interpretation, hermeneutics, phenomenology, epistemology, ontology, ethics, responsibility, trust, alignment, cooperation, dialogue, communication, interrelation, interaction, resonance, coherence, continuity, disruption, fragmentation, wholeness, totality, plurality, diversity, unity, paradox, ambiguity, uncertainty, openness, possibility, potentiality, transcendence`.split(',').map(k => k.trim());
+
+      const NODE_COUNT = 68;
+      const state = { nodes: [], mouse: { speed: 0 } };
+      const rand = (min, max) => Math.random() * (max - min) + min;
+
+      function resize() {
+        const ratio = window.devicePixelRatio || 1;
+        canvas.width = window.innerWidth * ratio;
+        canvas.height = window.innerHeight * ratio;
+        ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      }
+      resize();
+      window.addEventListener('resize', resize);
+
+      function createNode() {
+        const now = performance.now();
+        return {
+          x: Math.random(),
+          y: Math.random(),
+          z: Math.random(),
+          vx: rand(-0.0005, 0.0005),
+          vy: rand(-0.0005, 0.0005),
+          drift: rand(0.15, 0.6),
+          phase: rand(0, Math.PI * 2),
+          word: keywords[Math.floor(Math.random() * keywords.length)],
+          swapAt: now + rand(6000, 20000)
+        };
+      }
+
+      for (let i = 0; i < NODE_COUNT; i++) {
+        state.nodes.push(createNode());
+      }
+
+      let lastTime = performance.now();
+      let noiseSeed = rand(0, 1000);
+      const maxSpeed = 1200;
+
+      function update(now) {
+        const dt = Math.min((now - lastTime) / 16, 3.5);
+        lastTime = now;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const intensity = 0.6 + Math.min(state.mouse.speed / maxSpeed, 1.2);
+        const width = canvas.width / (window.devicePixelRatio || 1);
+        const height = canvas.height / (window.devicePixelRatio || 1);
+
+        ctx.save();
+        ctx.translate(0.5, 0.5);
+
+        for (const node of state.nodes) {
+          node.phase += 0.0025 * dt * node.drift * (0.6 + intensity * 0.4);
+          node.x += (node.vx + Math.sin(node.phase + noiseSeed) * 0.0004) * dt * (0.4 + intensity * 0.6);
+          node.y += (node.vy + Math.cos(node.phase - noiseSeed) * 0.0004) * dt * (0.4 + intensity * 0.6);
+          node.z += Math.sin(now / 1000 + node.phase * 2) * 0.0006 * dt;
+          node.z = Math.min(0.95, Math.max(0.05, node.z));
+
+          if (node.x < -0.1) node.x = 1.1;
+          if (node.x > 1.1) node.x = -0.1;
+          if (node.y < -0.1) node.y = 1.1;
+          if (node.y > 1.1) node.y = -0.1;
+
+          if (now > node.swapAt) {
+            node.word = keywords[Math.floor(Math.random() * keywords.length)];
+            node.swapAt = now + rand(8000, 26000);
+          }
+        }
+
+        for (let i = 0; i < state.nodes.length; i++) {
+          const a = state.nodes[i];
+          const ax = a.x * width;
+          const ay = a.y * height;
+          let first = null;
+          let second = null;
+          let d1 = Infinity;
+          let d2 = Infinity;
+          for (let j = 0; j < state.nodes.length; j++) {
+            if (i === j) continue;
+            const b = state.nodes[j];
+            const dx = ax - b.x * width;
+            const dy = ay - b.y * height;
+            const dist = dx * dx + dy * dy;
+            if (dist < d1) {
+              d2 = d1; second = first;
+              d1 = dist; first = b;
+            } else if (dist < d2) {
+              d2 = dist; second = b;
+            }
+          }
+          const neighbors = [first, second].filter(Boolean);
+          const depthAlpha = (1 - a.z) * 0.25;
+          for (const n of neighbors) {
+            const bx = n.x * width;
+            const by = n.y * height;
+            const gradient = ctx.createLinearGradient(ax, ay, bx, by);
+            gradient.addColorStop(0, `rgba(120, 155, 180, ${0.02 + depthAlpha * 0.5})`);
+            gradient.addColorStop(1, `rgba(30, 50, 70, ${0.01 + (1 - n.z) * 0.2})`);
+            ctx.strokeStyle = gradient;
+            ctx.lineWidth = 0.2 + (1 - a.z) * 0.6;
+            ctx.beginPath();
+            ctx.moveTo(ax, ay);
+            ctx.lineTo(bx, by);
+            ctx.stroke();
+          }
+        }
+
+        for (const node of state.nodes) {
+          const size = 10 + (1 - node.z) * 26;
+          const alpha = Math.min(0.38, 0.05 + (1 - node.z) * 0.22 * intensity);
+          const x = node.x * width;
+          const y = node.y * height;
+          ctx.save();
+          ctx.translate(x, y);
+          ctx.globalAlpha = alpha;
+          ctx.fillStyle = 'rgba(200, 210, 220, 1)';
+          ctx.font = `${size}px "IBM Plex Mono", "SFMono-Regular", monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = 'rgba(180, 200, 220, 0.25)';
+          ctx.shadowBlur = 16 + (1 - node.z) * 40;
+          ctx.fillText(node.word, 0, 0);
+          ctx.restore();
+        }
+
+        ctx.restore();
+        state.mouse.speed *= 0.94;
+        noiseSeed += 0.0003 * intensity;
+
+        requestAnimationFrame(update);
+      }
+      requestAnimationFrame(update);
+
+      let lastMouseTime = performance.now();
+      let lastMouseX = null;
+      let lastMouseY = null;
+      function pointerMove(e) {
+        const now = performance.now();
+        const { clientX: x, clientY: y } = e;
+        if (lastMouseX != null) {
+          const dx = x - lastMouseX;
+          const dy = y - lastMouseY;
+          const dt = now - lastMouseTime || 16;
+          const distance = Math.hypot(dx, dy);
+          const speed = distance / dt * 1000;
+          state.mouse.speed = Math.min(maxSpeed, state.mouse.speed * 0.6 + speed * 0.4 + Math.random() * 40);
+        }
+        lastMouseX = x;
+        lastMouseY = y;
+        lastMouseTime = now;
+      }
+
+      window.addEventListener('pointermove', pointerMove, { passive: true });
+      window.addEventListener('pointerleave', () => {
+        lastMouseX = null;
+        lastMouseY = null;
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+          state.mouse.speed = 0;
+        }
+      });
+    })();
+  </script>
+
 </body>
 </html>
