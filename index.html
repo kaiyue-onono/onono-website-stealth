@@ -20,7 +20,7 @@
       --accent-3:#9DB2BF;
       --accent-4:#DDE6ED;
 
-      --maxw:72ch;
+      --maxw:152ch; 
       --pad:clamp(20px, 4vw, 48px);
       --lh:1.5;
     }
@@ -223,7 +223,7 @@
     @media (max-width: 680px){
       .sigil{
         right: clamp(14px, 8vw, 36px);
-        bottom: clamp(14px, 10vw, 40px);
+        bottom: clamp(14px, 10vw, 15px);
         opacity:.72;
       }
       .sigil-ring{
@@ -397,7 +397,7 @@
     <section id="home" class="hero">
       <div class="container center">
         <span class="kicker">Stealth mode · Innovation-First</span>
-        <h1>From <span class="hero-word" data-hero-word aria-live="polite">UNDERSTAND</span><br />to Intelligence.</h1>
+        <h1>From <span class="hero-word" data-hero-word aria-live="polite">UNDERSTANDING</span><br />to Intelligence.</h1>
         <p class="lead">
           We believe the mainstream AI path is misaligned with reality. The world is complex and shifting;
           more data or longer memory alone do not yield truth, understanding, or better decisions.
@@ -542,7 +542,7 @@
           'Reflection', 'Reason', 'Thought', 'Comprehension', 'Cognition', 'Experience', 'Perspective', 'Narrative', 'Context',
           'Sense-making', 'Abstraction', 'Concept', 'Wisdom'
         ];
-        const baseWord = (heroWordContainer.textContent || 'UNDERSTAND').trim().toUpperCase();
+        const baseWord = (heroWordContainer.textContent || 'UNDERSTANDING').trim().toUpperCase();
         const heroWordOptions = Array.from(new Set(rawHeroOptions.map(word => word.trim().toUpperCase()).filter(Boolean)));
         if (!heroWordOptions.includes(baseWord)) {
           heroWordOptions.push(baseWord);
