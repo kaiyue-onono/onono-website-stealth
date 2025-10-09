@@ -919,7 +919,8 @@
         state.visibility += (state.targetVisibility - state.visibility) * 0.04;
         const baseOpacity = now >= schedule.start ? (boostActive ? 0.08 : 0.02) : 0;
         const opacityScale = boostActive ? 1.32 : 0.85;
-        const visibleOpacity = Math.min(1, baseOpacity + state.visibility * opacityScale);
+        const boostOpacityBonus = boostActive ? 0.2 : 0;
+        const visibleOpacity = Math.min(1, baseOpacity + state.visibility * opacityScale + boostOpacityBonus);
         canvas.style.opacity = visibleOpacity.toFixed(3);
 
         const motionFactor = (0.55 + Math.min(state.mouse.speed / maxSpeed, 0.9)) * state.boost.multiplier;
