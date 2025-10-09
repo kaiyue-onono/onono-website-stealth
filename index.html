@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="color-scheme" content="dark only" />
   <meta name="theme-color" content="#0b0d10" />
+  <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <title>ONONO — stealth</title>
   <meta name="description" content="ONONO — a restrained thesis about intelligence in a complex, shifting world. Stealth mode. Innovation-First." />
   <style>
@@ -768,11 +769,15 @@
       const EDGE_TINT_LIGHTNESS = [0.78, 0.64, 0.48];
       const TEXT_TINT_LIGHTNESS = 0.82;
       const SHADOW_TINT_LIGHTNESS = 0.76;
-      const mixColors = (base, tint, amount) => [
-        base[0] + (tint[0] - base[0]) * amount,
-        base[1] + (tint[1] - base[1]) * amount,
-        base[2] + (tint[2] - base[2]) * amount
-      ];
+      const clampColor = (value) => Math.max(0, Math.min(255, value));
+      const mixColors = (base, tint, amount) => {
+        const factor = Math.max(0, amount);
+        return [
+          clampColor(base[0] + (tint[0] - base[0]) * factor),
+          clampColor(base[1] + (tint[1] - base[1]) * factor),
+          clampColor(base[2] + (tint[2] - base[2]) * factor)
+        ];
+      };
       const hslToRgb = (h, s, l) => {
         const hue = ((h % 360) + 360) % 360 / 360;
         const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
@@ -802,7 +807,7 @@
           target: 1,
           colorIntensity: 0,
           hue: 210,
-          saturation: 0.25
+          saturation: 0.55
         }
       };
 
@@ -884,33 +889,38 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         const boostActive = state.boost.hold || now <= state.boost.releaseAt;
-        state.boost.target = boostActive ? 1.4 : 1;
+        state.boost.target = boostActive ? 2.35 : 1;
         state.boost.multiplier += (state.boost.target - state.boost.multiplier) * 0.08;
-        const colorTarget = boostActive ? 1 : 0;
+        const colorTarget = boostActive ? 3.4 : 0;
         state.boost.colorIntensity += (colorTarget - state.boost.colorIntensity) * 0.08;
         if (sigilEl && sigilWasBoosting !== boostActive) {
           sigilEl.dataset.boosting = boostActive ? 'true' : 'false';
           sigilWasBoosting = boostActive;
         }
 
+        let baseVisibility = 0;
         if (now >= schedule.start) {
           if (schedule.nextPulse === Infinity) {
             schedulePulse(now);
           }
           if (now >= schedule.nextPulse && now <= schedule.pulseEnd) {
-            state.targetVisibility = 0.55;
+            baseVisibility = 0.55;
           } else {
-            state.targetVisibility = 0.04;
+            baseVisibility = 0.04;
             if (now > schedule.pulseEnd) {
               schedulePulse(now);
             }
           }
-        } else {
-          state.targetVisibility = 0;
         }
 
+        const boostedVisibilityFloor = now >= schedule.start ? 0.82 : 0;
+        state.targetVisibility = boostActive ? Math.max(baseVisibility, boostedVisibilityFloor) : baseVisibility;
+
         state.visibility += (state.targetVisibility - state.visibility) * 0.04;
-        const visibleOpacity = now >= schedule.start ? 0.02 + state.visibility * 0.85 : 0;
+        const baseOpacity = now >= schedule.start ? (boostActive ? 0.08 : 0.02) : 0;
+        const opacityScale = boostActive ? 1.32 : 0.85;
+        const boostOpacityBonus = boostActive ? 0.2 : 0;
+        const visibleOpacity = Math.min(1, baseOpacity + state.visibility * opacityScale + boostOpacityBonus);
         canvas.style.opacity = visibleOpacity.toFixed(3);
 
         const motionFactor = (0.55 + Math.min(state.mouse.speed / maxSpeed, 0.9)) * state.boost.multiplier;
@@ -931,7 +941,7 @@
 
         const tintHue = state.boost.hue;
         const tintSaturation = state.boost.saturation;
-        const tintAmount = state.boost.colorIntensity * 0.65;
+        const tintAmount = Math.min(0.4 + state.boost.colorIntensity * 0.9, 1.6);
         const tintedEdges = BASE_EDGE_COLORS.map((base, idx) => {
           const tint = hslToRgb(tintHue, tintSaturation, EDGE_TINT_LIGHTNESS[idx]);
           return mixColors(base, tint, tintAmount);
@@ -1038,7 +1048,7 @@
             gradient.addColorStop(1, toRgba(tintedEdges[2], Math.max(0.05, edgeAlpha * 0.6)));
             ctx.strokeStyle = gradient;
             ctx.lineWidth = 0.35 + (1 - a.z) * 1.25 + a.pointerGlow * 0.35;
-            ctx.globalAlpha = Math.min(1, 0.6 + state.visibility * 0.8);
+            ctx.globalAlpha = Math.min(1, 0.6 + state.visibility * (boostActive ? 1.25 : 0.85));
             ctx.beginPath();
             ctx.moveTo(ax, ay);
             ctx.lineTo(bx, by);
@@ -1050,7 +1060,7 @@
 
         for (const node of state.nodes) {
           const size = fontBase + (1 - node.z) * fontRange;
-          const visibilityBoost = Math.min(1, state.visibility + 0.1);
+          const visibilityBoost = Math.min(boostActive ? 1.18 : 1, state.visibility + (boostActive ? 0.4 : 0.1));
           const glow = node.pointerGlow;
           const shade = node.pointerShade;
           const alpha = Math.max(0.04, Math.min(0.5, (0.05 + (1 - node.z) * 0.22 + node.shimmer * 0.35 + glow * 0.4 - shade * 0.4) * visibilityBoost));
@@ -1130,7 +1140,18 @@
           }, 260);
         };
         const setNewTint = () => {
-          boostState.hue = Math.random() * 360;
+          const previousHue = boostState.hue;
+          let nextHue = Math.random() * 360;
+          let attempts = 0;
+          while (previousHue != null) {
+            const delta = Math.abs(nextHue - previousHue);
+            const wrapDelta = Math.min(delta, 360 - delta);
+            if (wrapDelta >= 36 || attempts >= 4) break;
+            nextHue = Math.random() * 360;
+            attempts++;
+          }
+          boostState.hue = nextHue;
+          boostState.saturation = 0.55 + Math.random() * 0.35;
         };
         const onPointerDown = (event) => {
           if (!sigilRing.contains(event.target)) return;
